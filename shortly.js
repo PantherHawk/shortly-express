@@ -2,7 +2,7 @@ var express = require('express');
 var util = require('./lib/utility');
 var partials = require('express-partials');
 var bodyParser = require('body-parser');
-
+var session = require('express-session')
 
 var db = require('./app/config');
 var Users = require('./app/collections/users');
@@ -21,26 +21,78 @@ app.use(bodyParser.json());
 // Parse forms (signup/login)
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(__dirname + '/public'));
+// app.use(express.session());
 
 
-app.get('/', 
+
+//make a funciton that  verifies whether someone is logged in or not aka authenticated or not
+  //use express.session
+  //require session
+  //express session object set when someone logs in to their id
+  //check docs
+  //timer for cookies
+  // how to set the expression session
+    //app.use(session( { secret: 'secret_string', cookie: {maxAge: 600000} }));
+    //is session active?
+    //if active, they can go to pages, if not logged in dont let them go in and send them to login page
+
+//dont forget to make a signup route
+
+function restrict(req, res, next) {
+  if (req.session.user) {
+    next();
+  } else {
+    req.session.error = 'Access denied!';
+    res.redirect('/login');
+  }
+}
+
+app.get('/',
 function(req, res) {
   res.render('index');
 });
 
-app.get('/create', 
+app.get('/create',
 function(req, res) {
   res.render('index');
 });
 
-app.get('/links', 
+app.get('/login',
+function(req, res) {
+  res.render('login');
+});
+
+app.get('/links',
 function(req, res) {
   Links.reset().fetch().then(function(links) {
     res.status(200).send(links.models);
   });
 });
 
-app.post('/links', 
+app.post('/login',
+  function(req, res) {
+
+    let username = req.body.username;
+    let password = req.body.password;
+
+    // compare username to credentials
+      // match ?
+    // else...
+      // ... redirect to login.
+  })
+
+app.get('/logout', function(res, req) {
+  req.session.destroy(function() {
+    res.redirect('/');
+  });
+})
+
+app.get('/restricted',
+  function(req, res) {
+    res.send('restricted');
+  });
+
+app.post('/links',
 function(req, res) {
   var uri = req.body.url;
 
