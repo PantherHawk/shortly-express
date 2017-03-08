@@ -2,7 +2,7 @@ var express = require('express');
 var util = require('./lib/utility');
 var partials = require('express-partials');
 var bodyParser = require('body-parser');
-var session = require('express-session')
+var session = require('express-session');
 
 var db = require('./app/config');
 var Users = require('./app/collections/users');
@@ -32,14 +32,14 @@ app.use(express.static(__dirname + '/public'));
   //check docs
   //timer for cookies
   // how to set the expression session
-    //app.use(session( { secret: 'secret_string', cookie: {maxAge: 600000} }));
+app.use(session( { secret: 'secret_string', resave: false, cookie: {maxAge: 600000} }));
     //is session active?
     //if active, they can go to pages, if not logged in dont let them go in and send them to login page
 
 //dont forget to make a signup route
 
 function restrict(req, res, next) {
-  if (req.session.user) {
+  if (req.session.userId) {
     next();
   } else {
     req.session.error = 'Access denied!';
@@ -49,7 +49,9 @@ function restrict(req, res, next) {
 
 app.get('/',
 function(req, res) {
-  res.render('index');
+  restrict(req, res, function() {
+    res.render('index');
+  });
 });
 
 app.get('/create',
@@ -62,30 +64,78 @@ function(req, res) {
   res.render('login');
 });
 
-app.get('/links',
-function(req, res) {
+app.get('/links', function(req, res) {
   Links.reset().fetch().then(function(links) {
     res.status(200).send(links.models);
   });
 });
 
 app.post('/login',
-  function(req, res) {
+function(req, res) {
+  let username = req.body.username;
+  let password = req.body.password;
 
-    let username = req.body.username;
-    let password = req.body.password;
-
-    // compare username to credentials
-      // match ?
-    // else...
-      // ... redirect to login.
-  })
-
-app.get('/logout', function(res, req) {
-  req.session.destroy(function() {
-    res.redirect('/');
+  // see if username exists
+  new User({ username: username }).fetch().then((found) => {
+    if (!found) {
+    // ... redirect to login.
+      res.redirect('/login');
+  // else...
+    } else {
+      //compare password
+      // found --> { username: 'jo', password: 'jo', id: ''
+      found.comparePassword(password, found.get('password'), function(match) {
+      if ( match ) {
+      //start a session and giving it a userId
+          req.session.regenerate(function(err) {
+            req.session.userId = username;
+            res.redirect('/');
+          })
+      // res.render('/index');
+        } else {
+          res.redirect('/login');
+        }
+      });
+    };
   });
+});
+
+app.get('/signup',
+  (req, res) => {
+  res.render('signup');
 })
+
+app.post('/signup',
+  function(req, res) {
+    var username = req.body.username;
+    var password = req.body.password;
+
+    new User({ username: username })
+    .fetch()
+    .then(function(user) {
+      if ( user ) {
+        res.status(200).send('You\'re already a user');
+        res.render('login');
+      } else {
+        Users.create({
+          username: username,
+          password: password
+        })
+        .then(function(user) {
+          req.session.regenerate(function(err) {
+            req.session.userId = username;
+            res.redirect('/');
+          })
+        });
+      }
+    });
+});
+
+app.get('/logout', function(req, res) {
+  req.session.destroy(function() {
+    res.redirect('/login');
+  });
+});
 
 app.get('/restricted',
   function(req, res) {
@@ -123,6 +173,8 @@ function(req, res) {
     }
   });
 });
+
+
 
 /************************************************************/
 // Write your authentication routes here
