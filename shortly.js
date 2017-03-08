@@ -85,12 +85,12 @@ function(req, res) {
       //compare password
       // found --> { username: 'jo', password: 'jo', id: ''
       found.comparePassword(password, found.get('password'), function(match) {
-      if ( match ) {
+        if ( match ) {
       //start a session and giving it a userId
-          req.session.regenerate(function(err) {
-            req.session.userId = username;
-            res.redirect('/');
-          })
+         req.session.regenerate(function(err) {
+          req.session.userId = username;
+          res.redirect('/');
+        });
       // res.render('/index');
         } else {
           res.redirect('/login');
@@ -114,7 +114,7 @@ app.post('/signup',
     .fetch()
     .then(function(user) {
       if ( user ) {
-        res.status(200).send('You\'re already a user');
+        res.status(200);
         res.render('login');
       } else {
         Users.create({

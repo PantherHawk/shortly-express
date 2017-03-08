@@ -346,4 +346,44 @@ describe('', function() {
 
   }); // 'Account Login'
 
+describe('Logout button', function() {
+
+  beforeEach(function(done) {
+      // create a user that we can then log-in with
+      new User({
+        'username': 'Phillip',
+        'password': 'Phillip'
+      }).save().then(function() {
+        var options = {
+          'method': 'POST',
+          'followAllRedirects': true,
+          'uri': 'http://127.0.0.1:4568/login',
+          'json': {
+            'username': 'Phillip',
+            'password': 'Phillip'
+            }
+          };
+        })
+  });
+
+    it('Redirects to login page when a user logs out', function(done) {
+      request('http://127.0.0.1:4568/logout', function(error, res, body) {
+        expect(res.req.path).to.equal('/login');
+        done();
+      });
+    });
+
+    it('Changes the header location when a user logs out', function(done) {
+        request('http://127.0.0.1:4568/logout', function(error, res, body) {
+        expect(res.headers.location).to.equal('/logout');
+        done();
+      });
+    });
+    })
+
+    it('When user is logged in, user can navigate to homepage nav bar, and does not redirect to login page (which is what happens when a user in not logged in', function(done) {
+        request('http://127.0.0.1:4568/', function(error, res, body) {
+          expect(res.req.path).to.equal('/');
+        });
+    });
 });
